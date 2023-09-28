@@ -5,6 +5,8 @@
 //[Input] size_t bufferlen - size of input and output string buffers
 //[Output] char* outputbuffer - output string after trimming 
 //[Return] size_t - size of output string after trimming
+// test
+// test 2
 size_t trimstring(char* outputbuffer, const char* inputbuffer, size_t bufferlen)
 {   
     memcpy(outputbuffer, inputbuffer, bufferlen*sizeof(char));
