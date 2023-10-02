@@ -15,8 +15,9 @@ int main()
     char *parsedinput;
     char *args[3];
     char newline;
+    char *firstWord;
 
-    printf("Welcome to the GroupXX shell! Enter commands, enter 'quit' to exit\n");
+    printf("Welcome to the Group06 shell! Enter commands, enter 'quit' to exit\n");
     do
     {
         // Print the terminal prompt and get input
@@ -27,11 +28,17 @@ int main()
             fprintf(stderr, "Error reading input\n");
             return -1;
         }
-
+        //handles empty inputs
+        if (strcmp(input, "\n") == 0) {
+            continue;
+        }
         // Clean and parse the input string
         parsedinput = (char *)malloc(BUFLEN * sizeof(char));
         size_t parselength = trimstring(parsedinput, input, BUFLEN);
 
+        firstWord = (char *)malloc(BUFLEN * sizeof(char));
+        size_t firstWordLength = firstword(firstWord, parsedinput, BUFLEN);
+        
         // Sample shell logic implementation
         if (strcmp(parsedinput, "quit") == 0)
         {
