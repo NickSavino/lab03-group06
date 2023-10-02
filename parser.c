@@ -1,5 +1,6 @@
 #include "parser.h"
 
+
 // Command to trim whitespace and ASCII control characters from buffer
 //[Input] char* inputbuffer - input string to trim
 //[Input] size_t bufferlen - size of input and output string buffers
@@ -104,4 +105,26 @@ void removeQuotes(char *str)
         memmove(str, str + 1, len - 2);
         str[len - 2] = '\0';
     }
+}
+
+void tokenizeInput(char* args[], char* parsedInput, size_t bufferlen) {
+    char *token = strtok(parsedInput, " ");
+    if (!args) {
+        perror("Memory Allocation Failed");
+        exit(EXIT_FAILURE);
+    }
+
+    int arg_count = 0;
+    while (token != NULL && arg_count < bufferlen / 2)
+    {
+        args[arg_count++] = token;
+        token = strtok(NULL, " ");
+    }
+    args[arg_count] = NULL; // Terminate the argument list with NULL
+
+    for (int i = 0; i < arg_count; i++)
+    {
+        removeQuotes(args[i]);
+    }
+
 }
