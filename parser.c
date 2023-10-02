@@ -34,7 +34,8 @@ size_t firstword(char *outputbuffer, const char *inputbuffer, size_t bufferlen)
     // TO DO: Implement this function
 
     size_t i = 0;
-    while (i < bufferlen && inputbuffer[i] != ' ' && inputbuffer[i] != '\0' && inputbuffer[i] != '\n') {
+    while (i < bufferlen && inputbuffer[i] != ' ' && inputbuffer[i] != '\0' && inputbuffer[i] != '\n')
+    {
         outputbuffer[i] = inputbuffer[i];
         i++;
     }
@@ -72,7 +73,8 @@ bool isvalidascii(const char *inputbuffer, size_t bufferlen)
 int findpipe(const char *inputbuffer, size_t bufferlen)
 {
     // TO DO: Implement this function
-    for (size_t i = 0; i < bufferlen; i++) {
+    for (size_t i = 0; i < bufferlen; i++)
+    {
         if (inputbuffer[i] == '|')
             return i;
     }
@@ -87,7 +89,8 @@ int findpipe(const char *inputbuffer, size_t bufferlen)
 bool runinbackground(const char *inputbuffer, size_t bufferlen)
 {
     // TO DO: Implement this function
-    for (int i = strlen(inputbuffer) - 1; i >=0; i--) {
+    for (int i = strlen(inputbuffer) - 1; i >= 0; i--)
+    {
         if (inputbuffer[i] == ' ' || inputbuffer[i] == '\t' || inputbuffer[i] == '\n')
             continue;
         if (inputbuffer[i] == '&')
@@ -104,4 +107,18 @@ void removeQuotes(char *str)
         memmove(str, str + 1, len - 2);
         str[len - 2] = '\0';
     }
+}
+
+int splitArguments(char *input, char *output[])
+{
+    char *token = strtok(input, " ");
+    int arg_count = 0;
+    // 1024 is the hardcoded BUFLEN
+    while (token != NULL && arg_count < 1024 / 2)
+    {
+        output[arg_count++] = token;
+        token = strtok(NULL, " ");
+    }
+    output[arg_count] = NULL; // Terminate the argument list with NULL
+    return arg_count;
 }

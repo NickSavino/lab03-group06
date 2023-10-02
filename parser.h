@@ -15,5 +15,6 @@ bool isvalidascii(const char *inputbuffer, size_t bufferlen);
 int findpipe(const char *inputbuffer, size_t bufferlen);
 bool runinbackground(const char *inputbuffer, size_t bufferlen);
 void removeQuotes(char *str);
+int splitArguments(char *input, char *output[]);
 
 #endif
