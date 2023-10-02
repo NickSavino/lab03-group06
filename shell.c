@@ -7,9 +7,10 @@
 
 #define BUFLEN 1024
 
-void executePipeCommand(char *command1[], char *command2[]);
-int executeCommand(char* args[]);
+void preparePipeCommand(char *command1[], char *command2[]);
+int prepareCommand(char* args[]);
 void handleCD(char* args[]);
+int runCommand(char* args[]);
 
 
 int main()
@@ -74,7 +75,7 @@ int main()
                 char* args2[BUFLEN / 2];
                 tokenizeInput(args1, firstCommand, BUFLEN);
                 tokenizeInput(args2, secondCommand, BUFLEN);
-                executePipeCommand(args1, args2);
+                preparePipeCommand(args1, args2);
             } else {
             //Converts the input into a set of tokens
             tokenizeInput(args, parsedinput, BUFLEN);
@@ -87,7 +88,7 @@ int main()
                 free(parsedinput);
                 continue;
             }
-            executeCommand(args);
+            prepareCommand(args);
             
             }   
         }
@@ -99,7 +100,7 @@ int main()
     return 0;
     }
 
-int executeCommand(char* args[]) {
+int prepareCommand(char* args[]) {
 
     pid_t forkV = fork();
     if (forkV == -1) {
@@ -108,14 +109,61 @@ int executeCommand(char* args[]) {
     }
     if (forkV == 0)
     {
-        // pasredinput = exaclty what is typed into cmd
+        runCommand(args);
+    } else
+        wait(NULL);
+    return 0;
+}
 
-        // printf("\n%s\n", args[1]);
-        // for features one and 2, need /usr/bin/<command> <paramters> to run
+void handleCD(char* args[]) {
+        char *path = args[1];
+        if (path == NULL) {
+            //sets path to default if no argument is supplied
+            path = getenv("HOME");
+        }
+        if (chdir(path) != 0) {
+            perror("cd");
+        }
 
-        // execve(cont char *path, cont char*arg[],cont char* enviroment[]);
-        // Check if the command is an absolute path
-        if (args[0][0] == '/')
+}
+
+void preparePipeCommand(char *command1[], char *command2[]) {
+    int pipe_fd[2]; // File descriptors for the pipe
+
+    // Create the pipe
+    if (pipe(pipe_fd) == -1) {
+        perror("pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    // Fork the first process
+    pid_t pid1 = fork();
+    if (pid1 == 0) {
+        close(pipe_fd[0]); // Close read end
+        dup2(pipe_fd[1], STDOUT_FILENO); // Redirect standard output to write end of the pipe
+        close(pipe_fd[1]);
+        runCommand(command1);
+        exit(0);
+    }
+
+    // Fork the second process
+    pid_t pid2 = fork();
+    if (pid2 == 0) {
+        close(pipe_fd[1]); // Close write end
+        dup2(pipe_fd[0], STDIN_FILENO); // Redirect standard input to read end of the pipe
+        close(pipe_fd[0]);
+        runCommand(command2); // Execute the second command
+        exit(0);
+    }
+
+    // Parent process
+    close(pipe_fd[0]);
+    close(pipe_fd[1]);
+    waitpid(pid2, NULL, 0);
+}
+
+int runCommand(char* args[]) {
+          if (args[0][0] == '/')
         {
             if (execve(args[0], args, NULL) == -1)
             {
@@ -146,11 +194,7 @@ int executeCommand(char* args[]) {
                     snprintf(full_path, sizeof(full_path), "%s/%s", token, args[0]);
                     if (access(full_path, X_OK) == 0)
                     {
-                        if (execve(full_path, args, NULL) == -1)
-                        {
-                            perror("Error executing command from PATH");
-                            return -100;
-                        }
+                        execve(full_path, args, NULL) == -1;
                     }
                     token = strtok(NULL, ":");
                 }
@@ -158,59 +202,7 @@ int executeCommand(char* args[]) {
             }
             // If the command was not found in PATH
             fprintf(stderr, "Command not found: %s\n", args[0]);
-            return -1;
+            perror(args[0]);
+            exit(EXIT_FAILURE);
         }
-    } else
-        wait(NULL);
-    return 0;
-}
-
-void handleCD(char* args[]) {
-        char *path = args[1];
-        if (path == NULL) {
-            //sets path to default if no argument is supplied
-            path = getenv("HOME");
-        }
-        if (chdir(path) != 0) {
-            perror("cd");
-        }
-
-}
-
-void executePipeCommand(char *command1[], char *command2[]) {
-    int pipe_fd[2]; // File descriptors for the pipe
-
-    // Create the pipe
-    if (pipe(pipe_fd) == -1) {
-        perror("pipe");
-        exit(EXIT_FAILURE);
-    }
-
-    // Fork the first process
-    pid_t pid1 = fork();
-    if (pid1 == 0) {
-        close(pipe_fd[0]); // Close read end
-        dup2(pipe_fd[1], STDOUT_FILENO); // Redirect standard output to write end of the pipe
-        close(pipe_fd[1]);
-        executeCommand(command1);
-        perror("execvp"); // Only reached if execvp fails
-        exit(EXIT_FAILURE);
-    }
-
-    // Fork the second process
-    pid_t pid2 = fork();
-    if (pid2 == 0) {
-        close(pipe_fd[1]); // Close write end
-        dup2(pipe_fd[0], STDIN_FILENO); // Redirect standard input to read end of the pipe
-        close(pipe_fd[0]);
-        executeCommand(command2); // Execute the second command
-        perror("execvp"); // Only reached if execvp fails
-        exit(EXIT_FAILURE);
-    }
-
-    // Parent process
-    close(pipe_fd[0]);
-    close(pipe_fd[1]);
-    waitpid(pid1, NULL, 0);
-    waitpid(pid2, NULL, 0);
 }

@@ -73,7 +73,7 @@ bool isvalidascii(const char *inputbuffer, size_t bufferlen)
 int findpipe(const char *inputbuffer, size_t bufferlen)
 {
     // TO DO: Implement this function
-    for (size_t i = 0; i < bufferlen; i++) {
+    for (size_t i = 0; i < strlen(inputbuffer); i++) {
         if (inputbuffer[i] == '|')
             return i;
     }
