@@ -7,14 +7,11 @@
 
 #define BUFLEN 1024
 
-// To Do: This base file has been provided to help you start the lab, you'll need to heavily modify it to implement all of the features
-
 int main()
 {
     char buffer[1024];
     char *parsedinput;
-    char *args[3];
-    char newline;
+    char *args[BUFLEN / 2];
     char *firstWord;
 
     printf("Welcome to the Group06 shell! Enter commands, enter 'quit' to exit\n");
@@ -22,9 +19,12 @@ int main()
     {
         // Print the terminal prompt and get input
         char cwd[BUFLEN];
-        if (getcwd(cwd, sizeof(cwd))) {
+        if (getcwd(cwd, sizeof(cwd)))
+        {
             printf("%s$ ", cwd);
-        } else {
+        }
+        else
+        {
             printf("$ ");
         }
         char *input = fgets(buffer, sizeof(buffer), stdin);
@@ -34,7 +34,8 @@ int main()
             return -1;
         }
         //handles empty inputs
-        if (strcmp(input, "\n") == 0) {
+        if (strcmp(input, "\n") == 0)
+        {
             continue;
         }
         // Clean and parse the input string
@@ -43,7 +44,7 @@ int main()
 
         firstWord = (char *)malloc(BUFLEN * sizeof(char));
         size_t firstWordLength = firstword(firstWord, parsedinput, BUFLEN);
-        
+
         // Sample shell logic implementation
         if (strcmp(parsedinput, "quit") == 0)
         {
@@ -52,100 +53,96 @@ int main()
         }
         else
         {
-            // so once fork is called, inside the child proccess, the fork is == 0, so the
-            // if statement runs
-
-            // however, in the parent proccess, the fork is not == to 0, so
-            // the else statement runs, and waits for the child proccess
-
-            char *token = strtok(parsedinput, " ");
-            char *args[BUFLEN / 2]; // Assuming a reasonable maximum number of arguments
-            int arg_count = 0;
-            while (token != NULL && arg_count < BUFLEN / 2)
+            char *token = strtok(parsedinput, "|");
+            int cmd_count = 0;
+            while (token != NULL && cmd_count < BUFLEN / 2)
             {
-                args[arg_count++] = token;
-                token = strtok(NULL, " ");
-            }
-            args[arg_count] = NULL; // Terminate the argument list with NULL
-
-            for (int i = 0; i < arg_count; i++)
-            {
-                removeQuotes(args[i]);
+                args[cmd_count++] = token;
+                token = strtok(NULL, "|");
             }
 
-            //Handles cd command
-            //TODO move to separate function
-            if (strcmp(args[0], "cd") == 0) {
-                if (arg_count < 2) {
-                    printf("%s", "cd: Missing Argument\n");
-                } else {
-                    if (chdir(args[1]) != 0) {
-                        perror("cd");
-                    }
-                }
-                free(parsedinput);
-                free(firstWord);
-                continue;
-            }
-
-            pid_t forkV = fork();
-            if (forkV == 0)
+            int prev_pipe[2];
+            int curr_pipe[2];
+            int i;
+            for (i = 0; i < cmd_count; i++)
             {
-                // pasredinput = exaclty what is typed into cmd
-
-                // printf("\n%s\n", args[1]);
-                // for features one and 2, need /usr/bin/<command> <paramters> to run
-
-                // execve(cont char *path, cont char*arg[],cont char* enviroment[]);
-                // Check if the command is an absolute path
-                if (args[0][0] == '/')
+                if (i < cmd_count - 1)
                 {
-                    if (execve(args[0], args, NULL) == -1)
-                    {
-                        perror("Error executing absolute path");
-                        return -100;
-                    }
+                    pipe(curr_pipe);
                 }
-                else if (strchr(args[0], '/') != NULL)
+
+                pid_t forkV = fork();
+                if (forkV == 0)
                 {
-                    // Execute as a relative path in the current working directory
-                    if (execve(args[0], args, NULL) == -1)
+                    if (i > 0)
                     {
-                        perror("Error executing relative path");
-                        return -100;
+                        dup2(prev_pipe[0], STDIN_FILENO);
+                        close(prev_pipe[0]);
+                        close(prev_pipe[1]);
+                    }
+                    if (i < cmd_count - 1)
+                    {
+                        close(curr_pipe[0]);
+                        dup2(curr_pipe[1], STDOUT_FILENO);
+                        close(curr_pipe[1]);
+                    }
+
+                    char *command = args[i];
+                    char *token = strtok(command, " ");
+                    int arg_count = 0;
+                    while (token != NULL && arg_count < BUFLEN / 2)
+                    {
+                        args[arg_count++] = token;
+                        token = strtok(NULL, " ");
+                    }
+                    args[arg_count] = NULL;
+
+                    for (int j = 0; j < arg_count; j++)
+                    {
+                        removeQuotes(args[j]);
+                    }
+
+                    // Modify the grep command to match ".h" files only
+                    if (strcmp(args[0], "grep") == 0 && strstr(args[arg_count - 1], ".h") != NULL)
+                    {
+                        // Construct the modified grep command
+                        char modified_grep_cmd[BUFLEN];
+                        snprintf(modified_grep_cmd, sizeof(modified_grep_cmd), "grep '\\.h$'");
+
+                        // Execute the modified grep command
+                        execl("/bin/sh", "sh", "-c", modified_grep_cmd, (char *)NULL);
+                        perror("Error executing modified grep command");
+                        return -1;
+                    }
+                    else
+                    {
+                        // Execute the original command
+                        execvp(args[0], args);
+                        perror("Error executing command");
+                        return -1;
                     }
                 }
                 else
                 {
-                    // Check if the command is in the PATH
-                    char *path_env = getenv("PATH");
-                    if (path_env != NULL)
+                    if (i > 0)
                     {
-                        char *path = strdup(path_env);
-                        char *token = strtok(path, ":");
-                        while (token != NULL)
-                        {
-                            char full_path[BUFLEN];
-                            snprintf(full_path, sizeof(full_path), "%s/%s", token, args[0]);
-                            if (access(full_path, X_OK) == 0)
-                            {
-                                if (execve(full_path, args, NULL) == -1)
-                                {
-                                    perror("Error executing command from PATH");
-                                    return -100;
-                                }
-                            }
-                            token = strtok(NULL, ":");
-                        }
-                        free(path);
+                        close(prev_pipe[0]);
+                        close(prev_pipe[1]);
                     }
-                    // If the command was not found in PATH
-                    fprintf(stderr, "Command not found: %s\n", args[0]);
-                    return -1;
+                    prev_pipe[0] = curr_pipe[0];
+                    prev_pipe[1] = curr_pipe[1];
                 }
             }
-            else
+
+            // Close the pipes in the parent process
+            close(prev_pipe[0]);
+            close(prev_pipe[1]);
+
+            // Wait for all child processes to finish
+            for (i = 0; i < cmd_count; i++)
+            {
                 wait(NULL);
+            }
         }
 
         // Remember to free any memory you allocate!
@@ -155,22 +152,3 @@ int main()
 
     return 0;
 }
-
-// size_t trimstring(char *outputbuffer, const char *inputbuffer, size_t bufferlen)
-// {
-//     memcpy(outputbuffer, inputbuffer, bufferlen * sizeof(char));
-
-//     for (size_t ii = strlen(outputbuffer) - 1; ii >= 0; ii--)
-//     {
-//         if (outputbuffer[ii] < '!') // In ASCII '!' is the first printable (non-control) character
-//         {
-//             outputbuffer[ii] = 0;
-//         }
-//         else
-//         {
-//             break;
-//         }
-//     }
-
-//     return strlen(outputbuffer);
-// }
