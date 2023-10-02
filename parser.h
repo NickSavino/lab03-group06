@@ -15,6 +15,6 @@ bool isvalidascii(const char *inputbuffer, size_t bufferlen);
 int findpipe(const char *inputbuffer, size_t bufferlen);
 bool runinbackground(const char *inputbuffer, size_t bufferlen);
 void removeQuotes(char *str);
-void tokenizeInput(char* args[], char* parsedInput, size_t bufferlen);
+int tokenizeInput(char* args[], char* parsedInput, size_t bufferlen);
 
 #endif

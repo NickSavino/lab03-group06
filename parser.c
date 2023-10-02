@@ -107,7 +107,7 @@ void removeQuotes(char *str)
     }
 }
 
-void tokenizeInput(char* args[], char* parsedInput, size_t bufferlen) {
+int tokenizeInput(char* args[], char* parsedInput, size_t bufferlen) {
     char *token = strtok(parsedInput, " ");
     if (!args) {
         perror("Memory Allocation Failed");
@@ -126,5 +126,7 @@ void tokenizeInput(char* args[], char* parsedInput, size_t bufferlen) {
     {
         removeQuotes(args[i]);
     }
+
+    return arg_count;
 
 }
