@@ -11,8 +11,10 @@ void preparePipeCommand(char *command1[], char *command2[]);
 int prepareCommand(char* args[]);
 void handleCD(char* args[]);
 int runCommand(char* args[]);
+void checkBackgroundProcesses();
 
-
+int background = 0; // Flag
+        pid_t last_bg_pid = -1;
 int main()
 {
     char buffer[1024];
@@ -59,12 +61,6 @@ int main()
         }
         else
         {
-            // so once fork is called, inside the child proccess, the fork is == 0, so the
-            // if statement runs
-
-            // however, in the parent proccess, the fork is not == to 0, so
-            // the else statement runs, and waits for the child proccess
-            
             //pip file descriptor
             int pipe_fd[2];
             int pipeLocation = findpipe(parsedinput, BUFLEN);
@@ -80,6 +76,15 @@ int main()
             //Converts the input into a set of tokens
             tokenizeInput(args, parsedinput, BUFLEN);
 
+        int arg_count = 0;
+        while (args[arg_count] != NULL) {
+            arg_count++;
+        }
+
+        if (arg_count > 0 && strcmp(args[arg_count - 1], "&") == 0) {
+            background = 1;
+            args[arg_count - 1] = NULL; // Remove the '&' symbol
+        }
             //Handles cd command
             //TODO move to separate function
             if (strcmp(firstWord, "cd") == 0) {
@@ -91,10 +96,12 @@ int main()
             prepareCommand(args);
             
             }   
+            
         }
         // Remember to free any memory you allocate!
         free(firstWord);
         free(parsedinput);
+        checkBackgroundProcesses();
     } while (1);
 
     return 0;
@@ -111,7 +118,9 @@ int prepareCommand(char* args[]) {
     {
         runCommand(args);
     } else
-        wait(NULL);
+        if (!background) {
+            waitpid(forkV, NULL, 0);
+        }
     return 0;
 }
 
@@ -205,4 +214,12 @@ int runCommand(char* args[]) {
             perror(args[0]);
             exit(EXIT_FAILURE);
         }
+}
+
+void checkBackgroundProcesses() {
+    int status;
+    pid_t terminated_pid;
+    while ((terminated_pid = waitpid(-1, &status, WNOHANG)) > 0) {
+        printf("Background command %d terminated\n", terminated_pid);
+    }
 }
