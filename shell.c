@@ -21,7 +21,12 @@ int main()
     do
     {
         // Print the terminal prompt and get input
-        printf("$ ");
+        char cwd[BUFLEN];
+        if (getcwd(cwd, sizeof(cwd))) {
+            printf("%s$ ", cwd);
+        } else {
+            printf("$ ");
+        }
         char *input = fgets(buffer, sizeof(buffer), stdin);
         if (!input)
         {
@@ -66,6 +71,21 @@ int main()
             for (int i = 0; i < arg_count; i++)
             {
                 removeQuotes(args[i]);
+            }
+
+            //Handles cd command
+            //TODO move to separate function
+            if (strcmp(args[0], "cd") == 0) {
+                if (arg_count < 2) {
+                    printf("%s", "cd: Missing Argument\n");
+                } else {
+                    if (chdir(args[1]) != 0) {
+                        perror("cd");
+                    }
+                }
+                free(parsedinput);
+                free(firstWord);
+                continue;
             }
 
             pid_t forkV = fork();
@@ -129,6 +149,7 @@ int main()
         }
 
         // Remember to free any memory you allocate!
+        free(firstWord);
         free(parsedinput);
     } while (1);
 
