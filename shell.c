@@ -6,6 +6,10 @@
 #include "parser.h"
 
 #define BUFLEN 1024
+#define MAX_BG_PROCESSES 100
+
+pid_t bg_pids[MAX_BG_PROCESSES];
+int bg_count = 0;
 
 void preparePipeCommand(char *command1[], char *command2[]);
 int prepareCommand(char* args[]);
@@ -14,7 +18,6 @@ int runCommand(char* args[]);
 void checkBackgroundProcesses();
 
 int background = 0; // Flag
-        pid_t last_bg_pid = -1;
 int main()
 {
     char buffer[1024];
@@ -101,11 +104,23 @@ int main()
         // Remember to free any memory you allocate!
         free(firstWord);
         free(parsedinput);
+        background = 0;
         checkBackgroundProcesses();
     } while (1);
 
     return 0;
     }
+
+void handleCD(char* args[]) {
+        char *path = args[1];
+        if (path == NULL) {
+            //sets path to default if no argument is supplied
+            path = getenv("HOME");
+        }
+        if (chdir(path) != 0) {
+            perror("cd");
+        }
+}
 
 int prepareCommand(char* args[]) {
 
@@ -118,22 +133,14 @@ int prepareCommand(char* args[]) {
     {
         runCommand(args);
     } else
-        if (!background) {
+        if (background) {
+            if (bg_count < MAX_BG_PROCESSES) {
+                bg_pids[bg_count++] = forkV;
+            } else {
             waitpid(forkV, NULL, 0);
+            }
         }
     return 0;
-}
-
-void handleCD(char* args[]) {
-        char *path = args[1];
-        if (path == NULL) {
-            //sets path to default if no argument is supplied
-            path = getenv("HOME");
-        }
-        if (chdir(path) != 0) {
-            perror("cd");
-        }
-
 }
 
 void preparePipeCommand(char *command1[], char *command2[]) {
@@ -220,6 +227,16 @@ void checkBackgroundProcesses() {
     int status;
     pid_t terminated_pid;
     while ((terminated_pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        printf("Background command %d terminated\n", terminated_pid);
+        for (int i = 0; i < bg_count; i++) {
+            if (bg_pids[i] == terminated_pid) {
+                printf("Background command %d terminated\n", terminated_pid);
+                // Remove the PID from the array
+                for (int j = i; j < bg_count - 1; j++) {
+                    bg_pids[j] = bg_pids[j + 1];
+                }
+                bg_count--;
+                break;
+            }
+        }
     }
 }
