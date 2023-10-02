@@ -32,7 +32,14 @@ size_t trimstring(char *outputbuffer, const char *inputbuffer, size_t bufferlen)
 size_t firstword(char *outputbuffer, const char *inputbuffer, size_t bufferlen)
 {
     // TO DO: Implement this function
-    return 0;
+
+    size_t i = 0;
+    while (i < bufferlen && inputbuffer[i] != ' ' && inputbuffer[i] != '\0' && inputbuffer[i] != '\n') {
+        outputbuffer[i] = inputbuffer[i];
+        i++;
+    }
+    outputbuffer[i] = '\0';
+    return i;
 }
 
 // Command to test that string only contains valid ascii characters (non-control and not extended)
@@ -52,7 +59,7 @@ bool isvalidascii(const char *inputbuffer, size_t bufferlen)
     bool isValid = true;
     for (size_t ii = 0; ii < testlen; ii++)
     {
-        isValid &= ((unsigned char)inputbuffer[ii] <= '~'); // In (lower) ASCII '~' is the last printable character
+        isValid &= ((unsigned char)inputbuffer[ii] >= ' ' && (unsigned char)inputbuffer[ii] <= '~'); // In (lower) ASCII '~' is the last printable character
     }
 
     return isValid;
@@ -65,7 +72,10 @@ bool isvalidascii(const char *inputbuffer, size_t bufferlen)
 int findpipe(const char *inputbuffer, size_t bufferlen)
 {
     // TO DO: Implement this function
-
+    for (size_t i = 0; i < bufferlen; i++) {
+        if (inputbuffer[i] == '|')
+            return i;
+    }
     return -1;
 }
 
@@ -77,7 +87,12 @@ int findpipe(const char *inputbuffer, size_t bufferlen)
 bool runinbackground(const char *inputbuffer, size_t bufferlen)
 {
     // TO DO: Implement this function
-
+    for (int i = strlen(inputbuffer) - 1; i >=0; i--) {
+        if (inputbuffer[i] == ' ' || inputbuffer[i] == '\t' || inputbuffer[i] == '\n')
+            continue;
+        if (inputbuffer[i] == '&')
+            return true;
+    }
     return false;
 }
 
