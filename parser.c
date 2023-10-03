@@ -49,7 +49,6 @@ size_t firstword(char *outputbuffer, const char *inputbuffer, size_t bufferlen)
 //[Return] bool - true if no invalid ASCII characters present
 bool isvalidascii(const char *inputbuffer, size_t bufferlen)
 {
-    // TO DO: Correct this function so that the second test string fails
     size_t testlen = bufferlen;
     size_t stringlength = strlen(inputbuffer);
     if (strlen(inputbuffer) < bufferlen)
@@ -107,6 +106,8 @@ void removeQuotes(char *str)
     }
 }
 
+
+//takes a parsed input and covnerts each "term" into an element within an array
 int tokenizeInput(char* args[], char* parsedInput, size_t bufferlen) {
     char *token = strtok(parsedInput, " ");
     if (!args) {

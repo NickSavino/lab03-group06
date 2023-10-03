@@ -8,9 +8,12 @@
 #define BUFLEN 1024
 #define MAX_BG_PROCESSES 100
 
+//tracks running background processes
 pid_t bg_pids[MAX_BG_PROCESSES];
 int bg_count = 0;
 
+
+//forward declarations
 void preparePipeCommand(char *command1[], char *command2[]);
 int prepareCommand(char* args[]);
 void handleCD(char* args[]);
@@ -64,8 +67,7 @@ int main()
         }
         else
         {
-            //pip file descriptor
-            int pipe_fd[2];
+
             int pipeLocation = findpipe(parsedinput, BUFLEN);
             if (pipeLocation != -1) {
                 char* firstCommand = strtok(parsedinput, "|");
@@ -111,6 +113,7 @@ int main()
     return 0;
     }
 
+//allows shell to utilize "cd" command
 void handleCD(char* args[]) {
         char *path = args[1];
         if (path == NULL) {
@@ -124,15 +127,17 @@ void handleCD(char* args[]) {
 
 int prepareCommand(char* args[]) {
 
+    //create child process
     pid_t forkV = fork();
     if (forkV == -1) {
         perror("fork");
         return -1;
     }
-    if (forkV == 0)
+    if (forkV == 0) // if successful, execute command
     {
         runCommand(args);
     } else
+        //if background flag is 1, add to list of background processes
         if (background) {
             if (bg_count < MAX_BG_PROCESSES) {
                 bg_pids[bg_count++] = forkV;
@@ -178,6 +183,8 @@ void preparePipeCommand(char *command1[], char *command2[]) {
     waitpid(pid2, NULL, 0);
 }
 
+
+//executes prepares commands
 int runCommand(char* args[]) {
           if (args[0][0] == '/')
         {
@@ -223,6 +230,8 @@ int runCommand(char* args[]) {
         }
 }
 
+
+//checks for any background processes running
 void checkBackgroundProcesses() {
     int status;
     pid_t terminated_pid;
